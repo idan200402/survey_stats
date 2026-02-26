@@ -1,8 +1,8 @@
 import json
 import utils
-flag = False
+flag = True
 if flag:
-    file = 'submissions_4th_survey.json'
+    file = 'data/submissions_1st_survey_20.json'
     with open(file, 'r', encoding='utf-8') as f:
         rows = json.load(f)
 else:

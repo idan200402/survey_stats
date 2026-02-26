@@ -11,6 +11,7 @@ def merge_jsons(json_files):
     """
     merged_data = []
     for file in json_files:
+        file = "data/" + file
         with open(file, 'r', encoding='utf-8') as f:
             data = json.load(f)
             merged_data.extend(data)

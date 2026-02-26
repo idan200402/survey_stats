@@ -39,3 +39,5 @@ Thumbs.db
 # JSON files (ignore all)
 # =========================
 submissions_*.json
+#ignore the data folder
+data/

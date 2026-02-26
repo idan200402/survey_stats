@@ -7,7 +7,8 @@ files_pool = ['submissions_1st_survey.json','submissions_2nd_survey.json','submi
 
 flag = True
 if flag:
-    with open('submissions_4th_survey.json', 'r', encoding='utf-8') as f:
+    file = "data/submissions_1st_survey_20.json"
+    with open(file, 'r', encoding='utf-8') as f:
         rows = json.load(f)
 else:
     json_files = files_pool
