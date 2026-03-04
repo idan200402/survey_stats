@@ -1,21 +1,33 @@
 import json
 import utils
-flag = True
+
+flag = False
 if flag:
-    file = 'data/submissions_1st_survey_20.json'
-    with open(file, 'r', encoding='utf-8') as f:
+    file = utils.resolve_path("submissions_1st_survey_20_mock.json")
+    with open(file, "r", encoding="utf-8") as f:
         rows = json.load(f)
 else:
-    json_files = utils.files_pool
-    rows = utils.merge_jsons(json_files)
+    rows = utils.merge_jsons(["submissions_1st_survey_20_mock.json"])
 
 print("      Prolific ID        , Consistency Probability")
 probs = []
 for row in rows:
-    prolific_id = row['payload']['participant']['prolificId']
-    prob = utils.consistency_prob(row)
+    prolific_id = row["payload"]["participant"]["prolificId"]
+    prob = utils.consistency_prob_general(row)
     print(f"{prolific_id} , {prob:.4f}")
     probs.append(prob)
 
-average_prob = sum(probs) / len(probs)
-print(f"Average consistency probability across all participants: {average_prob:.4f}")
+average_prob = sum(probs) / len(probs) if probs else 0.0
+print(f"Average consistency probability across all participants: {average_prob:.4f}\n\n")
+
+print("      Prolific ID        , Consistency Probability (given AF)")
+probs_af = []
+for row in rows:
+    prolific_id = row["payload"]["participant"]["prolificId"]
+    prob = utils.consistency_prob_af(row)
+    print(f"{prolific_id} , {prob:.4f}")
+    probs_af.append(prob)
+
+non_zero = [p for p in probs_af if p != 0]
+average_prob_af = (sum(non_zero) / len(non_zero)) if non_zero else 0.0
+print(f"Average consistency probability across all participants: {average_prob_af:.4f}")

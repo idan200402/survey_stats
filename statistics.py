@@ -1,85 +1,84 @@
 import json
-from utils import merge_jsons, median, common_education_level
 
+from utils import (
+    comparison_pair,
+    merge_jsons,
+    median,
+    common_education_level,
+    resolve_path,
+)
 
-
-files_pool = ['submissions_1st_survey.json','submissions_2nd_survey.json','submissions_3rdA_survey.json','submissions_3rdB_survey.json','submissions_4th_survey.json']
+files_pool = [
+    "submissions_1st_survey.json",
+    "submissions_2nd_survey.json",
+    "submissions_3rdA_survey.json",
+    "submissions_3rdB_survey.json",
+    "submissions_4th_survey.json",
+]
 
 flag = True
 if flag:
-    file = "data/submissions_1st_survey_20.json"
-    with open(file, 'r', encoding='utf-8') as f:
+    file = resolve_path("submissions_2nd_survey_20.json")
+    with open(file, "r", encoding="utf-8") as f:
         rows = json.load(f)
 else:
-    json_files = files_pool
-    rows = merge_jsons(json_files)
+    rows = merge_jsons(["submissions_1st_survey_20.json" , "submissions_1st_survey_20_mock.json"])
 
-# for each question , and for each option , how many times it was chosen.
+# For each question (trialId), count options chosen.
 trial_counts = {}
-at_af_counts = {}
+
+# Across all trials, aggregate by comparison type (AF vs AT) and (AF vs BT)
+af_at_counts = {}
 af_bt_counts = {}
-# for each participant
+
 for row in rows:
-    # for each question he answered
-    for a in row['payload']['answers']:
-        # the question.
-        trial_id = a['trialId']
-        # the option he chose.
-        option = a['chosenOptionId']
-        # if the question is not in the dictionary yet , add it.
+    for a in row["payload"]["answers"]:
+        trial_id = a["trialId"]
+        option = a["chosenOptionId"]
+
         if trial_id not in trial_counts:
             trial_counts[trial_id] = {}
-        # if the option is not in the dictionary yet , add it.
         if option not in trial_counts[trial_id]:
-            trial_counts[trial_id][option] = 0  # zero times chosen until now.
-        # increment the count for this option in this question.
+            trial_counts[trial_id][option] = 0
         trial_counts[trial_id][option] += 1
 
-        # ---AT_vs_AF---
-        if trial_id.endswith('AT_vs_AF'):
-            if option not in at_af_counts:
-                at_af_counts[option] = 0
-            at_af_counts[option] += 1
+        pair = comparison_pair(trial_id)
 
-        # ---AF_vs_BT---
-        if trial_id.endswith('AF_vs_BT'):
-            if option not in af_bt_counts:
-                af_bt_counts[option] = 0
-            af_bt_counts[option] += 1
+        if pair == ("AF", "AT"):
+            af_at_counts[option] = af_at_counts.get(option, 0) + 1
 
-# analyzing average age across all participants.
-ages = [row['payload']['participant']['age'] for row in rows]
-# make the list of ages int instead of string.
-ages = [int(age) for age in ages]
+        if pair == ("AF", "BT"):
+            af_bt_counts[option] = af_bt_counts.get(option, 0) + 1
+
+# Age stats
+ages = [int(row["payload"]["participant"]["age"]) for row in rows]
 average_age = sum(ages) / len(ages)
 median_age = median(ages)
 
-# analyzing education levels across all participants.
-education_levels = [row['payload']['participant']['education'] for row in rows]
+# Education stats
+education_levels = [row["payload"]["participant"]["education"] for row in rows]
 most_common_education = common_education_level(education_levels)
 
-# printing probabilities.
 print(
-    f"per question (trialID) , summing up to {len(rows[0]['payload']['answers'])} questions across {len(rows)} participants")
+    f"per question (trialID), summing up to {len(rows[0]['payload']['answers'])} questions across {len(rows)} participants"
+)
 for trial_id, options in trial_counts.items():
-    # all options answered for this question.
     total = sum(options.values())
     print(trial_id)
     for option, count in options.items():
         print(f"  option {option} probability: {count / total:.3f} ({count}/{total})")
 
-print("\n---AT_vs_AF---")
-total_at_af = sum(at_af_counts.values())
-for option, count in at_af_counts.items():
-    print(f"option {option} probability: {count / total_at_af:.3f} ({count}/{total_at_af})")
+print("\n---AF_vs_AT---")
+total_af_at = sum(af_at_counts.values())
+for option, count in af_at_counts.items():
+    print(f"option {option} probability: {count / total_af_at:.3f} ({count}/{total_af_at})")
 
 print("\n---AF_vs_BT---")
 total_af_bt = sum(af_bt_counts.values())
 for option, count in af_bt_counts.items():
     print(f"option {option} probability: {count / total_af_bt:.3f} ({count}/{total_af_bt})")
 
-print("the ages of the participants:", ages)
-print(f"\nAverage age: {average_age:.2f}")
+print("\nthe ages of the participants:", ages)
+print(f"Average age: {average_age:.2f}")
 print(f"Median age: {median_age}")
-
 print(f"Most common education level: {most_common_education}")
