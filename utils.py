@@ -1,7 +1,7 @@
 """
 Utility helpers for analyzing Prolific survey submission JSONs.
 
-Your submission files are a list of objects shaped like:
+Submission files are a list of objects shaped like:
   {"payload": {"meta": {...}, "answers": [...], "participant": {...}, "feedback": {...}}}
 
 Assumptions used by the analysis scripts:
@@ -10,14 +10,30 @@ Assumptions used by the analysis scripts:
 * chosenOptionId is one of: AF, AT, BT.
 """
 
-from __future__ import annotations
-
 import json
 import os
 from collections import Counter
-from typing import Dict, List, Tuple
 
+english_knowing = [
+    "united kingdom",
+    "ireland",
+    "australia",
+    "canada",
+    "kenya",
+    "south africa"
+]
 
+non_english_knowing = [
+    "germany",
+    "italy",
+    "brazil",
+    "poland",
+    "france",
+    "portugal",
+    "greece",
+    "egypt",
+    "vietnam"
+]
 files_pool = [
     "submissions_1st_survey.json",
     "submissions_2nd_survey.json",
@@ -28,10 +44,9 @@ files_pool = [
 
 
 def resolve_path(path: str) -> str:
-    """Resolve a file path.
-
-    Older scripts hard-coded "data/<file>.json". This helper makes the code work
-    whether you run it from the repo root or from inside the data folder.
+    """
+    Resolve a file path.
+    Works whether you run from repo root (with data/ folder) or from inside data/.
     """
     if os.path.exists(path):
         return path
@@ -43,10 +58,10 @@ def resolve_path(path: str) -> str:
 
 def merge_jsons(json_files):
     """
-    input: list of json files.
-    output: merged list of all the data in the json files.
+    Input: list of json filenames
+    Output: merged list of all rows across all files
     """
-    merged_data: List[dict] = []
+    merged_data = []
     for file in json_files:
         path = resolve_path(file)
         with open(path, "r", encoding="utf-8") as f:
@@ -59,54 +74,52 @@ def merge_jsons(json_files):
 
 def median(lst):
     """
-    input: list of numbers.
-    return. median of the list:
+    input: list of numbers
+    return: median
     """
     lst = sorted(lst)
     n = len(lst)
+    if n == 0:
+        return None
     if n % 2 == 1:
         return lst[n // 2]
-    else:
-        return (lst[n // 2 - 1] + lst[n // 2]) / 2
+    return (lst[n // 2 - 1] + lst[n // 2]) / 2
 
 
 def common_education_level(education_levels):
     """
-    :param education_levels:
-    :return: common education level among the participants.
+    return: most common education level among participants
     """
     counter = Counter(education_levels)
     most_common = counter.most_common(1)
     return most_common[0][0] if most_common else None
 
 
-def base_question(trial_id):
+def base_question(trial_id: str) -> str:
     """
-    :param post_cutoff_a__AF_vs_AT
-    :return: post_cutoff
+    Example:
+      "post_cutoff_a__AF_vs_AT" -> "post_cutoff"
+      "math_problem_b__BT_vs_AF" -> "math_problem"
     """
-    left = trial_id.split("__", 1)[0]
-    return left.rsplit("_", 1)[0]
+    left = trial_id.split("__", 1)[0]  # "post_cutoff_a"
+    return left.rsplit("_", 1)[0]  # remove "_a"/"_b" -> "post_cutoff"
 
 
-def comparison_pair(trial_id: str) -> Tuple[str, str]:
-    """Return the pair of option IDs compared in this trial, normalized.
+def comparison_pair(trial_id: str):
+    """
+    Return the pair of option IDs compared in this trial, normalized.
 
     Examples:
       "...__AF_vs_AT" -> ("AF", "AT")
       "...__BT_vs_AF" -> ("AF", "BT")
     """
-    try:
-        right = trial_id.split("__", 1)[1]
-        a, b = right.split("_vs_", 1)
-    except Exception as e:
-        raise ValueError(f"Unrecognized trialId format: {trial_id}") from e
-    return tuple(sorted((a, b)))  # canonicalize order
+    right = trial_id.split("__", 1)[1]  # "AF_vs_AT"
+    a, b = right.split("_vs_", 1)
+    return tuple(sorted((a, b)))  # canonical order
 
 
 def group(chosen_option_id: str) -> str:
-    """Map raw choice to a coarse group.
-
+    """
     Consistency treats AT and BT as the same "T" bucket, and AF as "AF".
     """
     return "AF" if chosen_option_id == "AF" else "T"
@@ -114,22 +127,23 @@ def group(chosen_option_id: str) -> str:
 
 def consistency_prob_general(row):
     """
-    :param row: a participant's responses.
-    :return: the probability that the participant is consistent.
+    Per participant:
+      consistent if group(choice1) == group(choice2) for a base question.
+    Returns: consistent_pairs / total_pairs
     """
     answers = row["payload"]["answers"]
 
-    by_q: Dict[str, List[str]] = {}
+    by_q = {}
     for a in answers:
         q = base_question(a["trialId"])
         g = group(a["chosenOptionId"])
-        by_q.setdefault(q, []).append(g)
+        if q not in by_q:
+            by_q[q] = []
+        by_q[q].append(g)
 
     consistent = 0
     total = 0
-    for _, gs in by_q.items():
-        if len(gs) < 2:
-            continue
+    for gs in by_q.values():
         total += 1
         if gs[0] == gs[1]:
             consistent += 1
@@ -139,22 +153,22 @@ def consistency_prob_general(row):
 
 def consistency_prob_af(row):
     """
-    :param row: a participant's responses.
-    :return: consistency probability conditioned on AF appearing at least once.
+    Consistency probability conditioned on AF appearing at least once.
+    Returns: consistent_pairs / total_pairs_over_questions_where_AF_appears
     """
     answers = row["payload"]["answers"]
 
-    by_q: Dict[str, List[str]] = {}
+    by_q = {}
     for a in answers:
         q = base_question(a["trialId"])
         g = group(a["chosenOptionId"])
-        by_q.setdefault(q, []).append(g)
+        if q not in by_q:
+            by_q[q] = []
+        by_q[q].append(g)
 
     consistent = 0
     total = 0
-    for _, gs in by_q.items():
-        if len(gs) < 2:
-            continue
+    for gs in by_q.values():
         if "AF" in gs:
             total += 1
             if gs[0] == gs[1]:

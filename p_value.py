@@ -22,16 +22,16 @@ def p_value(n, k):
     return min(2 * p, 1)
 
 
+
 # --------------------------
 # hardcoded experiment data
 
-n = 170
-
+n = 172
 # distribution 1
-k1 = 107   # AT
+k1 = 100   # AT
 
 # distribution 2
-k2 = 87    # BT
+k2 = 96    # BT
 
 # --------------------------
 
