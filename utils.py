@@ -175,3 +175,6 @@ def consistency_prob_af(row):
                 consistent += 1
 
     return (consistent / total) if total else 0.0
+
+
+#for the authoring dataset.
