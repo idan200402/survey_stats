@@ -13,6 +13,10 @@ Assumptions used by the analysis scripts:
 import json
 import os
 from collections import Counter
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 english_knowing = [
     "united kingdom",
@@ -43,14 +47,14 @@ files_pool = [
 ]
 
 
-def resolve_path(path: str) -> str:
+def resolve_path(path: str):
     """
     Resolve a file path.
     Works whether you run from repo root (with data/ folder) or from inside data/.
     """
     if os.path.exists(path):
         return path
-    candidate = os.path.join("data", path)
+    candidate = BASE_DIR / "data" / path
     if os.path.exists(candidate):
         return candidate
     raise FileNotFoundError(f"Could not find '{path}' or '{candidate}'")

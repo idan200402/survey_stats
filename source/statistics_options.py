@@ -8,14 +8,14 @@ from utils import (
     common_education_level,
     resolve_path,
     english_knowing,
-    non_english_knowing
+    non_english_knowing,
+    BASE_DIR
 )
 
 # -----------------------------
 # Choose input
 # -----------------------------
 USE_SINGLE_FILE = False
-
 if USE_SINGLE_FILE:
     file_path = resolve_path("options/submissions_2nd_survey_20_english.json")
     with open(file_path, "r", encoding="utf-8") as f:

@@ -3,11 +3,11 @@ import utils
 
 flag = False
 if flag:
-    file = utils.resolve_path("submissions_1st_survey_20_mock.json")
+    file = utils.resolve_path("options/submissions_1st_survey_20_mock.json")
     with open(file, "r", encoding="utf-8") as f:
         rows = json.load(f)
 else:
-    rows = utils.merge_jsons(["submissions_1st_survey_20_mock.json"])
+    rows = utils.merge_jsons(["options/submissions_1st_survey_20_mock.json"])
 
 print("      Prolific ID        , Consistency Probability")
 probs = []
